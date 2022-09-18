@@ -101,8 +101,16 @@ const generateSession = (dataBuffer, userAgent, ipAddr) => {
  */
 const isAccessAble = async (uid, site) => {
     let setting = await Setting.findOne();
-    let check = setting.membershipLids.map(lid => getMembership(uid, lid, site));
-    return check.includes(1); // If user has one of plans then passed
+    let check = false;
+    for (let i = 0; i < setting.membershipLids.length; i++) {
+        let lid = setting.membershipLids[i];
+        let result = await getMembership(uid, lid, site);
+        if (result != 0) {
+            check = true;
+            break;
+        }
+    }
+    return check;
 };
 /**
  * Check if the user with ID has a certain level of membership or not in the site.
@@ -132,9 +140,7 @@ const getMembership = async (uid, lid, site) => {
  */
 const authMiddleware = async (req, res, next) => {
     let userAgent = req.headers['user-agent'];
-    // let ipAddr = req.headers['x-real-ip'];
-    let ipAddr = '45.126.3.252';
-    console.log("ip address ====>", ipAddr);
+    let ipAddr = process.env.NODE_ENV == 'development' ? '45.126.3.252' : req.headers['x-forwarded-for'];
     let { sess, site } = req.body;
     if (!sess) {
         return res.status(400).end('Bad Request, please try again.');
@@ -181,7 +187,6 @@ const memberMiddleware = async (req, res, next) => {
     let userAgent = req.headers['user-agent'];
     // let ipAddr = req.headers['x-real-ip'];
     let ipAddr = '45.126.3.252';
-    console.log("ip address ======>", ipAddr);
     if (!isValidSession(sess, userAgent, ipAddr)) return res.status(400).end('Session is invalid.');
     
     let wpInfoDecoded = JSON.parse(base64.decode(wpInfo));

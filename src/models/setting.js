@@ -15,7 +15,7 @@ const SettingSchema = new Schema({
         default: 5
     },
     userAgent: String,
-    cookie: String,
+    cookie: String
 });
 /**
  * Define the setting model.
