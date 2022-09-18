@@ -1,10 +1,8 @@
 const base64 = require('base-64');
 const crypto = require('node:crypto');
-const { get } = require('lodash');
 const axios = require('axios');
 const Setting = require('../models/setting');
 const Site = require('../models/sites');
-const { serverLog } = require('../services/logger');
 
 /**
  * Display 'not-found' error called 404 when a request doesn't match to any routes.
@@ -122,7 +120,9 @@ const isAccessAble = async (uid, site) => {
 const getMembership = async (uid, lid, site) => {
     const siteInfo = await Site.findOne({ url: site });
     if (!siteInfo || !siteInfo.membershipApiKey) {
-        serverLog.error(`Missing config for ${site}.`);
+        await axios.post(`${process.env.ADMIN_DOMAIN}/logs/server`, {
+            log: `Missing config for ${site}.`
+        });
         return 0;
     }
     const { data } = await axios.get(
@@ -185,8 +185,8 @@ const memberMiddleware = async (req, res, next) => {
     if (!wpInfo || !sess) return res.status(400).end('Access Denined.');
     
     let userAgent = req.headers['user-agent'];
-    // let ipAddr = req.headers['x-real-ip'];
-    let ipAddr = '45.126.3.252';
+    let ipAddr = process.env.NODE_ENV == 'development' ? '45.126.3.252' : req.headers['x-forwarded-for'];
+
     if (!isValidSession(sess, userAgent, ipAddr)) return res.status(400).end('Session is invalid.');
     
     let wpInfoDecoded = JSON.parse(base64.decode(wpInfo));

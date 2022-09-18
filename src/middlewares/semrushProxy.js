@@ -3,8 +3,8 @@ const {
     responseInterceptor
 } = require('http-proxy-middleware');
 const cheerio = require('cheerio');
+const axios = require('axios');
 const config = require('../services/config');
-const { semrushLog } = require('../services/logger');
 
 /**
  * Setting proxy to send all the requests that comes from wp site into this nodeapp to www.semrush.com   
@@ -39,8 +39,10 @@ const { semrushLog } = require('../services/logger');
             async (responseBuffer, proxyRes, req, res) => {// Ignore static file
                 if (req.url.match(/\.(css|json|js|text|png|jpg|map|ico|svg)/)) return responseBuffer;
                 // Log the activity
-                
-                semrushLog.info(`${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`)
+                console.log(`${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`);
+                axios.post(`${process.env.ADMIN_DOMAIN}/logs/semrush`, {
+                    log: `${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`
+                });
                 if (proxyRes.headers['location']) {// Rewrite the location to the domain of nodeapp
                     let locale = "";
                     try {
