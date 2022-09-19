@@ -9,6 +9,20 @@ const config = require('../services/config');
 /**
  * Setting proxy to send all the requests that comes from wp site into this nodeapp to www.semrush.com   
  */
+ const getFormQueryString = (data) => {
+    let items = [];
+    Object.keys(data).forEach((key, idx) => {
+        if (Array.isArray(data[key])) {
+            for(let item of data[key]) {
+                items.push(key + "[]" + '=' + encodeURIComponent(item));
+            }
+        } else {
+            items.push(key + '=' + encodeURIComponent(data[key]));
+        }
+    });
+    let dataQuery = items.join('&');
+    return dataQuery;
+ }
  const semrushProxy = (prefix) => {
     return createProxyMiddleware({
         target: `https://${prefix}.semrush.com`,
@@ -21,6 +35,7 @@ const config = require('../services/config');
             proxyReq.setHeader('Cookie', cookie);
             // Fix the body-parser module
             if (['POST', 'PATCH', 'PUT'].includes(req.method)) {
+
                 let contentType = proxyReq.getHeader('content-type');
                 let writeBody = bodyData => {
                     proxyReq.setHeader('content-length', Buffer.byteLength(bodyData));
@@ -30,8 +45,9 @@ const config = require('../services/config');
                     writeBody(JSON.stringify(req.body));
                 }
                 if (contentType && contentType.includes('application/x-www-form-urlencoded')) {
-                    let params = new URLSearchParams(req.body);
-                    writeBody(params.toString());
+                    let params = getFormQueryString(req.body);
+                    proxyReq.setHeader("content-type", "application/x-www-form-urlencoded");
+                    writeBody(params);
                 }
             }
         },
@@ -39,7 +55,6 @@ const config = require('../services/config');
             async (responseBuffer, proxyRes, req, res) => {// Ignore static file
                 if (req.url.match(/\.(css|json|js|text|png|jpg|map|ico|svg)/)) return responseBuffer;
                 // Log the activity
-                console.log(`${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`);
                 axios.post(`${process.env.ADMIN_DOMAIN}/logs/semrush`, {
                     log: `${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`
                 });
