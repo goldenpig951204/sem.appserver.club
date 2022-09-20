@@ -7,7 +7,9 @@ const axios = require('axios');
 const config = require('../services/config');
 
 /**
- * Setting proxy to send all the requests that comes from wp site into this nodeapp to www.semrush.com   
+ * Convert data based on form-submit to query-string
+ * @param {*} data 
+ * @returns 
  */
  const getFormQueryString = (data) => {
     let items = [];
@@ -23,6 +25,9 @@ const config = require('../services/config');
     let dataQuery = items.join('&');
     return dataQuery;
  }
+/**
+ * Setting proxy to send all the requests that comes from wp site into this nodeapp to www.semrush.com   
+ */
  const semrushProxy = (prefix) => {
     return createProxyMiddleware({
         target: `https://${prefix}.semrush.com`,
@@ -55,9 +60,11 @@ const config = require('../services/config');
             async (responseBuffer, proxyRes, req, res) => {// Ignore static file
                 if (req.url.match(/\.(css|json|js|text|png|jpg|map|ico|svg)/)) return responseBuffer;
                 // Log the activity
-                axios.post(`${process.env.ADMIN_DOMAIN}/logs/semrush`, {
-                    log: `${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`
-                });
+                // axios.post(`${process.env.ADMIN_DOMAIN}/logs/semrush`, {
+                //     log: `${req.user.username} ${req.wpSite} ${req.headers['user-agent']} ${req.url} ${proxyRes.statusCode}`
+                // }).then((data) => {
+                //     console.log(data);
+                // });
                 if (proxyRes.headers['location']) {// Rewrite the location to the domain of nodeapp
                     let locale = "";
                     try {

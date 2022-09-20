@@ -21,7 +21,7 @@ const start = async () => {
   config.setConfig(setting);
   
   app.listen(port, async () => {
-    console.log(`Server listening ==========>: http://localhost:${port}`);
+    console.log(`Server listening ==========>: http://${process.env.DOMAIN}:${port}`);
   });
 };
 
